@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labour Attendance</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;padding:16px;color:#172033}
+.box{background:white;padding:16px;border-radius:12px;margin-bottom:14px}
+h2{margin-top:0}
+input,select,button{padding:12px;margin:5px 0;border-radius:8px;border:1px solid #cbd5e1;font-size:16px;box-sizing:border-box}
+input{width:100%}
+button{background:#1457c5;color:white;border:0;cursor:pointer}
+.row{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap}
+.row select{max-width:145px}
+.small{font-size:13px;color:#64748b}
+</style>
+</head>
+<body>
+<h2>👷 Labour Attendance</h2>
+
+<div class="box">
+  <label>मिति छान्नुहोस्</label>
+  <input type="date" id="day">
+</div>
+
+<div class="box">
+  <h3>कर्मचारी थप्नुहोस्</h3>
+  <input id="name" placeholder="मिस्त्री / लेबरको नाम">
+  <button onclick="addWorker()">+ नाम थप्नुहोस्</button>
+</div>
+
+<div class="box">
+  <h3>आजको हाजिरी</h3>
+  <div id="workers"></div>
+  <button onclick="saveAttendance()">हाजिरी Save गर्नुहोस्</button>
+  <p id="msg" class="small"></p>
+</div>
+
+<div class="box">
+  <h3>मासिक रिपोर्ट</h3>
+  <input type="month" id="month">
+  <div id="report"></div>
+</div>
+
+<script>
+const get = key => JSON.parse(localStorage.getItem(key) || "[]");
+const put = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+const today = new Date();
+document.getElementById("day").value =
+  today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+document.getElementById("month").value =
+  today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
+
+function addWorker(){
+  const input=document.getElementById("name");
+  const name=input.value.trim();
+  if(!name)return alert("नाम लेख्नुहोस्");
+  const workers=get("workers");
+  workers.push({id:Date.now(),name});
+  put("workers",workers);
+  input.value="";
+  render();
+}
+
+function render(){
+  const workers=get("workers");
+  const day=document.getElementById("day").value;
+  const records=get("attendance");
+  const saved=records.find(r=>r.day===day);
+  document.getElementById("workers").innerHTML=workers.length?workers.map(w=>{
+    const old=saved?.entries?.find(e=>e.id===w.id);
+    return `<div class="row"><span>${escapeHTML(w.name)}</span>
+    <select data-id="${w.id}">
+      <option value="Present" ${old?.status==="Present"?"selected":""}>हाजिर</option>
+      <option value="Absent" ${old?.status==="Absent"?"selected":""}>गैरहाजिर</option>
+      <option value="Half Day" ${old?.status==="Half Day"?"selected":""}>आधा दिन</option>
+    </select></div>`;
+  }).join(""):"पहिले कर्मचारीको नाम थप्नुहोस्।";
+  renderReport();
+}
+
+function escapeHTML(s){
+  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function saveAttendance(){
+  const day=document.getElementById("day").value;
+  if(!day)return alert("मिति छान्नुहोस्");
+  const entries=[...document.querySelectorAll("#workers select")].map(s=>({
+    id:Number(s.dataset.id),status:s.value
+  }));
+  const records=get("attendance");
+  const index=records.findIndex(r=>r.day===day);
+  const record={day,entries};
+  if(index>=0)records[index]=record;else records.push(record);
+  put("attendance",records);
+  document.getElementById("msg").textContent="हाजिरी Save भयो: "+day;
+  renderReport();
+}
+
+function renderReport(){
+  const month=document.getElementById("month").value;
+  const workers=get("workers");
+  const records=get("attendance").filter(r=>r.day.startsWith(month));
+  document.getElementById("report").innerHTML=workers.map(w=>{
+    let p=0,a=0,h=0;
+    records.forEach(r=>(r.entries||[]).filter(e=>e.id===w.id).forEach(e=>{
+      if(e.status==="Present")p++;
+      if(e.status==="Absent")a++;
+      if(e.status==="Half Day")h++;
+    }));
+    return `<div class="row"><span>${escapeHTML(w.name)}</span>
+    <span>हाजिर ${p} | गैरहाजिर ${a} | आधा दिन ${h}</span></div>`;
+  }).join("")||"कुनै कर्मचारी छैन";
+}
+
+document.getElementById("day").addEventListener("change",render);
+document.getElementById("month").addEventListener("change",renderReport);
+render();
+</script>
+</body>
+</html>
