@@ -3,198 +3,371 @@
 <html lang="ne">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1457c5">
-<meta name="description" content="Simple Labour Attendance App">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123d75">
 <link rel="manifest" href="./manifest.json">
-<title>SGTS Labour Attendance</title>
+<title>SGTS Site Management</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;padding:16px;color:#172033}
-header{background:#1457c5;color:white;padding:20px;border-radius:14px;margin-bottom:15px}
-h1{font-size:23px;margin:0 0 5px}
-h2{font-size:19px;margin-top:0}
-.box{background:white;padding:16px;border-radius:12px;margin-bottom:14px}
-input,select,button{padding:12px;margin:5px 0;border-radius:8px;border:1px solid #cbd5e1;font-size:16px}
-input{width:100%}
-button{background:#1457c5;color:white;border:0;cursor:pointer}
-.row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap}
-.row select{max-width:145px}
-.small{font-size:13px;color:#64748b}
-.report{padding:12px 0;border-bottom:1px solid #eee}
+body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif}
+header{background:#123d75;color:white;padding:18px}
+header h2{margin:0 0 6px}
+nav{display:flex;gap:6px;overflow:auto;padding:10px;background:white;position:sticky;top:0}
+nav button{min-width:max-content}
+button{background:#1457c5;color:white;border:0;border-radius:8px;padding:11px;cursor:pointer}
+input,select,textarea{width:100%;padding:11px;margin:5px 0 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}
+label{font-size:13px;font-weight:bold}
+main{padding:12px;max-width:800px;margin:auto}
+.box{background:white;padding:15px;border-radius:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#e5edff;padding:12px;border-radius:9px;overflow-wrap:anywhere}
+.stat strong{display:block;font-size:21px;margin-top:7px}
+.item{border-bottom:1px solid #e2e8f0;padding:12px 0;overflow-wrap:anywhere}
+.item button{margin:3px}
+.hidden{display:none}
+.small{font-size:12px;color:#64748b}
+.danger{background:#b42318}
 </style>
 </head>
 <body>
-
 <header>
-<h1>👷 SGTS Attendance</h1>
+<h2>🏗️ SGTS Site Management</h2>
 <div>Sano Ghar Thulo Sapana</div>
-<div>Labour Daily Attendance</div>
 </header>
 
-<div class="box">
-<h2>📅 मिति छान्नुहोस्</h2>
-<input type="date" id="day">
-<div id="dayText" class="small"></div>
-</div>
+<nav>
+<button onclick="show('home')">Dashboard</button>
+<button onclick="show('sites')">Sites</button>
+<button onclick="show('log')">Daily Log</button>
+<button onclick="show('money')">Income/Expense</button>
+<button onclick="show('labour')">Labour</button>
+<button onclick="show('reports')">Reports</button>
+<button onclick="show('backup')">Backup</button>
+</nav>
 
+<main>
+<section id="home">
 <div class="box">
-<h2>➕ कर्मचारी थप्नुहोस्</h2>
-<input id="name" placeholder="मिस्त्री / लेबरको नाम">
-<button onclick="addWorker()">नाम थप्नुहोस्</button>
+<h3>📊 Business Dashboard</h3>
+<label>आजको मिति</label>
+<input type="date" id="today">
+<div class="grid">
+<div class="stat">कुल आम्दानी<strong id="dashIn">Rs 0</strong></div>
+<div class="stat">कुल खर्च<strong id="dashOut">Rs 0</strong></div>
+<div class="stat">हिसाबको नाफा/घाटा<strong id="dashProfit">Rs 0</strong></div>
+<div class="stat">साइट संख्या<strong id="dashSites">0</strong></div>
 </div>
-
+</div>
 <div class="box">
-<h2>📋 दैनिक हाजिरी</h2>
-<div id="workers"></div>
+<h3>चलिरहेका साइट</h3>
+<div id="homeSites"></div>
+</div>
+</section>
+
+<section id="sites" class="hidden">
+<div class="box">
+<h3>➕ नयाँ Site</h3>
+<label>साइट / ग्राहकको नाम</label>
+<input id="sname" placeholder="जस्तै: रामको घर">
+<label>साइटको स्थान</label>
+<input id="slocation" placeholder="Dharan-5">
+<label>कामको प्रकार</label>
+<select id="stype">
+<option>Steel Fabrication</option>
+<option>RCC Construction</option>
+<option>Grill / Gate</option>
+<option>Prefab / Mini House</option>
+<option>Renovation</option>
+<option>Other</option>
+</select>
+<label>सम्झौता रकम (रु.)</label>
+<input id="samount" type="number" min="0" placeholder="कुल रकम">
+<label>सुरु मिति</label>
+<input id="sdate" type="date">
+<label>लक्ष्य समाप्ति मिति</label>
+<input id="senddate" type="date">
+<button onclick="addSite()">Site Save गर्नुहोस्</button>
+</div>
+<div class="box">
+<h3>सबै Site</h3>
+<div id="siteList"></div>
+</div>
+</section>
+
+<section id="log" class="hidden">
+<div class="box">
+<h3>📝 Daily Work Log</h3>
+<label>मिति</label>
+<input id="ldate" type="date">
+<label>Site छान्नुहोस्</label>
+<select id="ls"></select>
+<label>आज गरेको काम</label>
+<textarea id="lwork" rows="3" placeholder="आजको काम र प्रगति"></textarea>
+<label>कामदार संख्या</label>
+<input id="lworkers" type="number" min="0" placeholder="जम्मा कामदार">
+<label>भोलिको योजना</label>
+<textarea id="lnext" rows="2"></textarea>
+<button onclick="addLog()">Daily Log Save</button>
+</div>
+<div class="box">
+<h3>कामको रेकर्ड</h3>
+<div id="logList"></div>
+</div>
+</section>
+
+<section id="money" class="hidden">
+<div class="box">
+<h3>💰 आम्दानी / खर्च</h3>
+<label>मिति</label>
+<input id="tdate" type="date">
+<label>Site</label>
+<select id="ts"></select>
+<label>प्रकार</label>
+<select id="ttype">
+<option value="income">आम्दानी</option>
+<option value="expense">खर्च</option>
+</select>
+<label>शीर्षक</label>
+<input id="tdesc" placeholder="सामग्री, लेबर, ग्राहक भुक्तानी">
+<label>रकम (रु.)</label>
+<input id="tamount" type="number" min="0" placeholder="रकम">
+<button onclick="addTransaction()">हिसाब Save गर्नुहोस्</button>
+</div>
+<div class="box">
+<h3>हिसाबको रेकर्ड</h3>
+<div id="transactionList"></div>
+</div>
+</section>
+
+<section id="labour" class="hidden">
+<div class="box">
+<h3>👷 कामदार थप्नुहोस्</h3>
+<input id="wname" placeholder="कामदारको नाम">
+<input id="wrole" placeholder="मिस्त्री / हेल्पर">
+<button onclick="addLabour()">कामदार Save</button>
+</div>
+<div class="box">
+<h3>दैनिक हाजिरी</h3>
+<label>मिति</label>
+<input id="adate" type="date">
+<label>Site</label>
+<select id="asite"></select>
+<div id="attendanceList"></div>
 <button onclick="saveAttendance()">हाजिरी Save गर्नुहोस्</button>
-<div id="msg" class="small"></div>
 </div>
-
 <div class="box">
-<h2>📊 मासिक रिपोर्ट</h2>
-<input type="month" id="month">
-<div id="report"></div>
+<h3>कामदारको सूची</h3>
+<div id="labourList"></div>
 </div>
+</section>
 
+<section id="reports" class="hidden">
 <div class="box">
-<h2>💾 डाटा Backup</h2>
-<p class="small">आफ्नो हाजिरीको Backup नियमित डाउनलोड गर्नुहोस्।</p>
-<button onclick="backup()">Backup डाउनलोड गर्नुहोस्</button>
-<button onclick="document.getElementById('restore').click()">Backup Restore गर्नुहोस्</button>
-<input id="restore" type="file" accept=".json,application/json" hidden>
+<h3>📈 मासिक रिपोर्ट</h3>
+<input id="rmonth" type="month">
+<div class="grid">
+<div class="stat">आम्दानी<strong id="rIn">0</strong></div>
+<div class="stat">खर्च<strong id="rOut">0</strong></div>
+<div class="stat">नाफा/घाटा<strong id="rProfit">0</strong></div>
+<div class="stat">कामका रेकर्ड<strong id="rLogs">0</strong></div>
 </div>
+</div>
+<div class="box">
+<h3>Site अनुसार हिसाब</h3>
+<div id="siteReport"></div>
+</div>
+<div class="box">
+<h3>कामदारको मासिक हाजिरी</h3>
+<div id="attendanceReport"></div>
+</div>
+</section>
 
-<p class="small">डाटा यही Browser मा सुरक्षित हुन्छ। Browser Data Clear गर्दा डाटा हराउन सक्छ। नियमित Backup लिनुहोस्।</p>
+<section id="backup" class="hidden">
+<div class="box">
+<h3>💾 डाटा सुरक्षा</h3>
+<p class="small">नियमित Backup डाउनलोड गरेर सुरक्षित राख्नुहोस्। अर्को मोबाइलमा डाटा सार्न पनि Backup प्रयोग गर्न सकिन्छ।</p>
+<button onclick="exportData()">Backup डाउनलोड</button>
+<label>Backup Restore गर्न JSON फाइल छान्नुहोस्</label>
+<input type="file" id="importFile" accept=".json,application/json">
+<button onclick="importData()">Restore Data</button>
+</div>
+</section>
+</main>
 
 <script>
-const get = k => {
-  try { return JSON.parse(localStorage.getItem(k) || "[]"); }
-  catch(e) { return []; }
-};
-const put = (k,v) => localStorage.setItem(k,JSON.stringify(v));
-
+const DB="sgts_sitebook_v1";
+const empty=()=>({sites:[],logs:[],transactions:[],labours:[],attendance:[]});
+function read(){
+ try{return {...empty(),...JSON.parse(localStorage.getItem(DB)||"{}")}}
+ catch(e){return empty()}
+}
+let db=read();
+function save(){localStorage.setItem(DB,JSON.stringify(db))}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function el(id){return document.getElementById(id)}
+function val(id){return el(id).value.trim()}
+function money(n){return "Rs "+Number(n||0).toLocaleString("en-IN")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function today(){
  const d=new Date();
- return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
 }
+["today","ldate","tdate","adate"].forEach(k=>el(k).value=today());
+el("sdate").value=today();
+el("rmonth").value=today().slice(0,7);
 
-document.getElementById("day").value=today();
-document.getElementById("month").value=today().slice(0,7);
-
-function esc(s){
- return String(s).replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- })[c]);
-}
-
-function addWorker(){
- const input=document.getElementById("name");
- const name=input.value.trim();
- if(!name)return alert("कर्मचारीको नाम लेख्नुहोस्।");
- const list=get("workers");
- if(list.some(w=>w.name.toLowerCase()===name.toLowerCase()))
-   return alert("यो नाम पहिल्यै थपिएको छ।");
- list.push({id:String(Date.now())+Math.random().toString(16).slice(2),name});
- put("workers",list);
- input.value="";
+function show(page){
+ document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));
+ el(page).classList.remove("hidden");
  render();
 }
-
-function render(){
- const list=get("workers");
- const day=document.getElementById("day").value;
- const record=get("attendance").find(r=>r.day===day);
- document.getElementById("dayText").textContent=day?"छानिएको मिति: "+day:"";
- document.getElementById("workers").innerHTML=list.length?list.map(w=>{
-   const old=record?.entries?.find(e=>e.id===w.id);
-   const status=old?old.status:"Present";
-   return `<div class="row">
-   <span>${esc(w.name)}</span>
-   <select data-id="${esc(w.id)}">
-   <option value="Present" ${status==="Present"?"selected":""}>हाजिर</option>
-   <option value="Absent" ${status==="Absent"?"selected":""}>गैरहाजिर</option>
-   <option value="Half Day" ${status==="Half Day"?"selected":""}>आधा दिन</option>
-   </select></div>`;
- }).join(""):"कर्मचारीको नाम पहिले थप्नुहोस्।";
- renderReport();
+function siteName(id){
+ return db.sites.find(s=>s.id===id)?.name||"Site हटाइएको/छैन";
 }
-
+function siteOptions(selectId){
+ const old=el(selectId).value;
+ el(selectId).innerHTML='<option value="">Site छान्नुहोस्</option>'+
+ db.sites.map(s=>`<option value="${s.id}">${esc(s.name)} — ${esc(s.location)}</option>`).join("");
+ if(db.sites.some(s=>s.id===old))el(selectId).value=old;
+}
+function addSite(){
+ if(!val("sname"))return alert("Site को नाम लेख्नुहोस्");
+ const amount=Number(val("samount")||0);
+ if(amount<0)return alert("रकम मिलाउनुहोस्");
+ db.sites.push({id:id(),name:val("sname"),location:val("slocation"),type:val("stype"),amount,start:val("sdate"),end:val("senddate"),created:today()});
+ save();["sname","slocation","samount","senddate"].forEach(k=>el(k).value="");
+ render();alert("Site Save भयो");
+}
+function addLog(){
+ if(!val("ls"))return alert("पहिले Site छान्नुहोस्");
+ if(!val("lwork"))return alert("आजको काम लेख्नुहोस्");
+ db.logs.push({id:id(),date:val("ldate"),site:val("ls"),work:val("lwork"),workers:Number(val("lworkers")||0),next:val("lnext")});
+ save();el("lwork").value="";el("lworkers").value="";el("lnext").value="";
+ render();alert("Daily Log Save भयो");
+}
+function addTransaction(){
+ if(!val("ts"))return alert("Site छान्नुहोस्");
+ if(!val("tdesc"))return alert("हिसाबको शीर्षक लेख्नुहोस्");
+ const amount=Number(val("tamount"));
+ if(!Number.isFinite(amount)||amount<=0)return alert("सही रकम लेख्नुहोस्");
+ db.transactions.push({id:id(),date:val("tdate"),site:val("ts"),type:val("ttype"),desc:val("tdesc"),amount});
+ save();el("tdesc").value="";el("tamount").value="";
+ render();alert("हिसाब Save भयो");
+}
+function addLabour(){
+ if(!val("wname"))return alert("कामदारको नाम लेख्नुहोस्");
+ db.labours.push({id:id(),name:val("wname"),role:val("wrole")});
+ save();el("wname").value="";el("wrole").value="";render();
+}
 function saveAttendance(){
- const day=document.getElementById("day").value;
- if(!day)return alert("मिति छान्नुहोस्।");
- const entries=[...document.querySelectorAll("#workers select")].map(s=>({
-   id:s.dataset.id,status:s.value
+ if(!val("asite"))return alert("Site छान्नुहोस्");
+ const date=val("adate"),site=val("asite");
+ const entries=[...document.querySelectorAll("[data-att]")].map(s=>({labour:s.dataset.att,status:s.value}));
+ if(!entries.length)return alert("पहिले कामदार थप्नुहोस्");
+ db.attendance=db.attendance.filter(a=>!(a.date===date&&a.site===site));
+ db.attendance.push({id:id(),date,site,entries});
+ save();render();alert("हाजिरी Save भयो");
+}
+function del(collection,key){
+ if(!confirm("यो रेकर्ड हटाउने हो?"))return;
+ db[collection]=db[collection].filter(x=>x.id!==key);save();render();
+}
+function render(){
+ ["ls","ts","asite"].forEach(siteOptions);
+ el("siteList").innerHTML=db.sites.map(s=>`
+ <div class="item"><b>${esc(s.name)}</b><br>
+ ${esc(s.location)} · ${esc(s.type)}<br>
+ सम्झौता: ${money(s.amount)}<br>
+ <span class="small">सुरु: ${esc(s.start||"-")} · लक्ष्य: ${esc(s.end||"-")}</span><br>
+ <button class="danger" onclick="del('sites','${s.id}')">Site हटाउनुहोस्</button>
+ </div>`).join("")||"अहिलेसम्म Site थपिएको छैन।";
+
+ el("homeSites").innerHTML=db.sites.slice(-5).reverse().map(s=>
+ `<div class="item"><b>${esc(s.name)}</b><br>${esc(s.location)} · ${money(s.amount)}</div>`
+ ).join("")||"चलिरहेको Site छैन।";
+
+ el("logList").innerHTML=db.logs.slice().reverse().slice(0,50).map(l=>
+ `<div class="item"><b>${esc(l.date)} — ${esc(siteName(l.site))}</b><br>
+ काम: ${esc(l.work)}<br>कामदार: ${l.workers}<br>भोलि: ${esc(l.next||"-")}<br>
+ <button class="danger" onclick="del('logs','${l.id}')">हटाउनुहोस्</button></div>`
+ ).join("")||"Daily Log छैन।";
+
+ el("transactionList").innerHTML=db.transactions.slice().reverse().slice(0,100).map(t=>
+ `<div class="item"><b>${esc(t.date)} — ${esc(t.desc)}</b><br>
+ Site: ${esc(siteName(t.site))}<br>${t.type==="income"?"आम्दानी":"खर्च"}: ${money(t.amount)}<br>
+ <button class="danger" onclick="del('transactions','${t.id}')">हटाउनुहोस्</button></div>`
+ ).join("")||"हिसाबको रेकर्ड छैन।";
+
+ el("labourList").innerHTML=db.labours.map(w=>
+ `<div class="item"><b>${esc(w.name)}</b> — ${esc(w.role)}<br>
+ <button class="danger" onclick="del('labours','${w.id}')">हटाउनुहोस्</button></div>`
+ ).join("")||"कामदार थपिएको छैन।";
+
+ const old=db.attendance.find(a=>a.date===val("adate")&&a.site===val("asite"));
+ el("attendanceList").innerHTML=db.labours.map(w=>{
+ const e=old?.entries.find(x=>x.labour===w.id);
+ return `<div class="item">${esc(w.name)}
+ <select data-att="${w.id}">
+ <option value="Present" ${e?.status==="Present"?"selected":""}>हाजिर</option>
+ <option value="Absent" ${e?.status==="Absent"?"selected":""}>गैरहाजिर</option>
+ <option value="Half Day" ${e?.status==="Half Day"?"selected":""}>आधा दिन</option>
+ </select></div>`;
+ }).join("")||"पहिले कामदार थप्नुहोस्।";
+
+ const sum=(arr,type)=>arr.filter(x=>x.type===type).reduce((n,x)=>n+x.amount,0);
+ const inc=sum(db.transactions,"income"),out=sum(db.transactions,"expense");
+ el("dashIn").textContent=money(inc);
+ el("dashOut").textContent=money(out);
+ el("dashProfit").textContent=money(inc-out);
+ el("dashSites").textContent=db.sites.length;
+
+ const month=val("rmonth");
+ const tx=db.transactions.filter(t=>t.date.startsWith(month));
+ const mi=sum(tx,"income"),mo=sum(tx,"expense");
+ el("rIn").textContent=money(mi);
+ el("rOut").textContent=money(mo);
+ el("rProfit").textContent=money(mi-mo);
+ el("rLogs").textContent=db.logs.filter(l=>l.date.startsWith(month)).length;
+
+ el("siteReport").innerHTML=db.sites.map(s=>{
+ const a=tx.filter(t=>t.site===s.id&&t.type==="income").reduce((n,t)=>n+t.amount,0);
+ const b=tx.filter(t=>t.site===s.id&&t.type==="expense").reduce((n,t)=>n+t.amount,0);
+ const allIn=db.transactions.filter(t=>t.site===s.id&&t.type==="income").reduce((n,t)=>n+t.amount,0);
+ return `<div class="item"><b>${esc(s.name)}</b><br>
+ सम्झौता: ${money(s.amount)}<br>
+ यो महिनाको आम्दानी: ${money(a)}<br>
+ यो महिनाको खर्च: ${money(b)}<br>
+ यो महिनाको नाफा/घाटा: ${money(a-b)}<br>
+ सम्झौता अनुसार बाँकी: ${money(Math.max(0,s.amount-allIn))}</div>`;
+ }).join("")||"Site छैन।";
+
+ el("attendanceReport").innerHTML=db.labours.map(w=>{
+ let p=0,a=0,h=0;
+ db.attendance.filter(r=>r.date.startsWith(month)).forEach(r=>
+ r.entries.filter(e=>e.labour===w.id).forEach(e=>{
+ if(e.status==="Present")p++;
+ if(e.status==="Absent")a++;
+ if(e.status==="Half Day")h++;
  }));
- const records=get("attendance");
- const i=records.findIndex(r=>r.day===day);
- const item={day,entries};
- if(i>=0)records[i]=item;
- else records.push(item);
- put("attendance",records);
- document.getElementById("msg").textContent="हाजिरी Save भयो: "+day;
- renderReport();
+ return `<div class="item"><b>${esc(w.name)}</b><br>हाजिर: ${p} · गैरहाजिर: ${a} · आधा दिन: ${h}</div>`;
+ }).join("")||"हाजिरी रिपोर्ट छैन।";
 }
-
-function renderReport(){
- const month=document.getElementById("month").value;
- const list=get("workers");
- const records=get("attendance").filter(r=>r.day.startsWith(month));
- let totalP=0,totalA=0,totalH=0;
- document.getElementById("report").innerHTML=list.map(w=>{
-   let p=0,a=0,h=0;
-   records.forEach(r=>(r.entries||[]).forEach(e=>{
-     if(e.id!==w.id)return;
-     if(e.status==="Present")p++;
-     if(e.status==="Absent")a++;
-     if(e.status==="Half Day")h++;
-   }));
-   totalP+=p;totalA+=a;totalH+=h;
-   return `<div class="report"><b>${esc(w.name)}</b><br>
-   हाजिर: ${p} | गैरहाजिर: ${a} | आधा दिन: ${h}</div>`;
- }).join("")||"यो महिनाको रिपोर्ट छैन।";
- document.getElementById("report").insertAdjacentHTML("afterbegin",
- `<div class="report"><b>सबै कर्मचारीको जम्मा</b><br>
- हाजिर: ${totalP} | गैरहाजिर: ${totalA} | आधा दिन: ${totalH}</div>`);
+function exportData(){
+ const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="SGTS-Site-Backup.json";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-
-function backup(){
- const data={
-   workers:get("workers"),
-   attendance:get("attendance"),
-   exportedAt:new Date().toISOString()
- };
- const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
- const url=URL.createObjectURL(blob);
- const a=document.createElement("a");
- a.href=url;a.download="SGTS-Attendance-Backup.json";
- a.click();URL.revokeObjectURL(url);
-}
-
-document.getElementById("restore").addEventListener("change",async function(){
- const file=this.files[0];
- if(!file)return;
+async function importData(){
+ const file=el("importFile").files[0];if(!file)return alert("पहिले Backup फाइल छान्नुहोस्");
  try{
-   const data=JSON.parse(await file.text());
-   if(!Array.isArray(data.workers)||!Array.isArray(data.attendance))
-     throw new Error("Invalid backup");
-   if(!confirm("हालको डाटा Backup को डाटाले बदल्ने हो?"))return;
-   put("workers",data.workers);
-   put("attendance",data.attendance);
-   render();
-   alert("Backup Restore भयो।");
- }catch(e){alert("Backup फाइल मिलेन।");}
- this.value="";
-});
-
-document.getElementById("day").addEventListener("change",render);
-document.getElementById("month").addEventListener("change",renderReport);
-
-if("serviceWorker" in navigator){
- window.addEventListener("load",()=>{
-   navigator.serviceWorker.register("./service-worker.js").catch(console.error);
- });
+ const d=JSON.parse(await file.text());
+ if(!Array.isArray(d.sites)||!Array.isArray(d.transactions)||!Array.isArray(d.labours))throw Error();
+ if(!confirm("हालको डाटा Backup ले बदल्ने हो?"))return;
+ db={...empty(),...d};save();render();alert("Backup Restore भयो");
+ }catch(e){alert("Backup फाइल सही छैन");}
 }
+["rmonth","adate","asite"].forEach(k=>el(k).addEventListener("change",render));
 render();
 </script>
 </body>
