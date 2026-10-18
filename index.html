@@ -4,121 +4,197 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Labour Attendance</title>
+<meta name="theme-color" content="#1457c5">
+<meta name="description" content="Simple Labour Attendance App">
+<link rel="manifest" href="./manifest.json">
+<title>SGTS Labour Attendance</title>
 <style>
+*{box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;padding:16px;color:#172033}
+header{background:#1457c5;color:white;padding:20px;border-radius:14px;margin-bottom:15px}
+h1{font-size:23px;margin:0 0 5px}
+h2{font-size:19px;margin-top:0}
 .box{background:white;padding:16px;border-radius:12px;margin-bottom:14px}
-h2{margin-top:0}
-input,select,button{padding:12px;margin:5px 0;border-radius:8px;border:1px solid #cbd5e1;font-size:16px;box-sizing:border-box}
+input,select,button{padding:12px;margin:5px 0;border-radius:8px;border:1px solid #cbd5e1;font-size:16px}
 input{width:100%}
 button{background:#1457c5;color:white;border:0;cursor:pointer}
-.row{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap}
 .row select{max-width:145px}
 .small{font-size:13px;color:#64748b}
+.report{padding:12px 0;border-bottom:1px solid #eee}
 </style>
 </head>
 <body>
-<h2>👷 Labour Attendance</h2>
+
+<header>
+<h1>👷 SGTS Attendance</h1>
+<div>Sano Ghar Thulo Sapana</div>
+<div>Labour Daily Attendance</div>
+</header>
 
 <div class="box">
-  <label>मिति छान्नुहोस्</label>
-  <input type="date" id="day">
+<h2>📅 मिति छान्नुहोस्</h2>
+<input type="date" id="day">
+<div id="dayText" class="small"></div>
 </div>
 
 <div class="box">
-  <h3>कर्मचारी थप्नुहोस्</h3>
-  <input id="name" placeholder="मिस्त्री / लेबरको नाम">
-  <button onclick="addWorker()">+ नाम थप्नुहोस्</button>
+<h2>➕ कर्मचारी थप्नुहोस्</h2>
+<input id="name" placeholder="मिस्त्री / लेबरको नाम">
+<button onclick="addWorker()">नाम थप्नुहोस्</button>
 </div>
 
 <div class="box">
-  <h3>आजको हाजिरी</h3>
-  <div id="workers"></div>
-  <button onclick="saveAttendance()">हाजिरी Save गर्नुहोस्</button>
-  <p id="msg" class="small"></p>
+<h2>📋 दैनिक हाजिरी</h2>
+<div id="workers"></div>
+<button onclick="saveAttendance()">हाजिरी Save गर्नुहोस्</button>
+<div id="msg" class="small"></div>
 </div>
 
 <div class="box">
-  <h3>मासिक रिपोर्ट</h3>
-  <input type="month" id="month">
-  <div id="report"></div>
+<h2>📊 मासिक रिपोर्ट</h2>
+<input type="month" id="month">
+<div id="report"></div>
 </div>
+
+<div class="box">
+<h2>💾 डाटा Backup</h2>
+<p class="small">आफ्नो हाजिरीको Backup नियमित डाउनलोड गर्नुहोस्।</p>
+<button onclick="backup()">Backup डाउनलोड गर्नुहोस्</button>
+<button onclick="document.getElementById('restore').click()">Backup Restore गर्नुहोस्</button>
+<input id="restore" type="file" accept=".json,application/json" hidden>
+</div>
+
+<p class="small">डाटा यही Browser मा सुरक्षित हुन्छ। Browser Data Clear गर्दा डाटा हराउन सक्छ। नियमित Backup लिनुहोस्।</p>
 
 <script>
-const get = key => JSON.parse(localStorage.getItem(key) || "[]");
-const put = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+const get = k => {
+  try { return JSON.parse(localStorage.getItem(k) || "[]"); }
+  catch(e) { return []; }
+};
+const put = (k,v) => localStorage.setItem(k,JSON.stringify(v));
 
-const today = new Date();
-document.getElementById("day").value =
-  today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-document.getElementById("month").value =
-  today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
+function today(){
+ const d=new Date();
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+document.getElementById("day").value=today();
+document.getElementById("month").value=today().slice(0,7);
+
+function esc(s){
+ return String(s).replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ })[c]);
+}
 
 function addWorker(){
-  const input=document.getElementById("name");
-  const name=input.value.trim();
-  if(!name)return alert("नाम लेख्नुहोस्");
-  const workers=get("workers");
-  workers.push({id:Date.now(),name});
-  put("workers",workers);
-  input.value="";
-  render();
+ const input=document.getElementById("name");
+ const name=input.value.trim();
+ if(!name)return alert("कर्मचारीको नाम लेख्नुहोस्।");
+ const list=get("workers");
+ if(list.some(w=>w.name.toLowerCase()===name.toLowerCase()))
+   return alert("यो नाम पहिल्यै थपिएको छ।");
+ list.push({id:String(Date.now())+Math.random().toString(16).slice(2),name});
+ put("workers",list);
+ input.value="";
+ render();
 }
 
 function render(){
-  const workers=get("workers");
-  const day=document.getElementById("day").value;
-  const records=get("attendance");
-  const saved=records.find(r=>r.day===day);
-  document.getElementById("workers").innerHTML=workers.length?workers.map(w=>{
-    const old=saved?.entries?.find(e=>e.id===w.id);
-    return `<div class="row"><span>${escapeHTML(w.name)}</span>
-    <select data-id="${w.id}">
-      <option value="Present" ${old?.status==="Present"?"selected":""}>हाजिर</option>
-      <option value="Absent" ${old?.status==="Absent"?"selected":""}>गैरहाजिर</option>
-      <option value="Half Day" ${old?.status==="Half Day"?"selected":""}>आधा दिन</option>
-    </select></div>`;
-  }).join(""):"पहिले कर्मचारीको नाम थप्नुहोस्।";
-  renderReport();
-}
-
-function escapeHTML(s){
-  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const list=get("workers");
+ const day=document.getElementById("day").value;
+ const record=get("attendance").find(r=>r.day===day);
+ document.getElementById("dayText").textContent=day?"छानिएको मिति: "+day:"";
+ document.getElementById("workers").innerHTML=list.length?list.map(w=>{
+   const old=record?.entries?.find(e=>e.id===w.id);
+   const status=old?old.status:"Present";
+   return `<div class="row">
+   <span>${esc(w.name)}</span>
+   <select data-id="${esc(w.id)}">
+   <option value="Present" ${status==="Present"?"selected":""}>हाजिर</option>
+   <option value="Absent" ${status==="Absent"?"selected":""}>गैरहाजिर</option>
+   <option value="Half Day" ${status==="Half Day"?"selected":""}>आधा दिन</option>
+   </select></div>`;
+ }).join(""):"कर्मचारीको नाम पहिले थप्नुहोस्।";
+ renderReport();
 }
 
 function saveAttendance(){
-  const day=document.getElementById("day").value;
-  if(!day)return alert("मिति छान्नुहोस्");
-  const entries=[...document.querySelectorAll("#workers select")].map(s=>({
-    id:Number(s.dataset.id),status:s.value
-  }));
-  const records=get("attendance");
-  const index=records.findIndex(r=>r.day===day);
-  const record={day,entries};
-  if(index>=0)records[index]=record;else records.push(record);
-  put("attendance",records);
-  document.getElementById("msg").textContent="हाजिरी Save भयो: "+day;
-  renderReport();
+ const day=document.getElementById("day").value;
+ if(!day)return alert("मिति छान्नुहोस्।");
+ const entries=[...document.querySelectorAll("#workers select")].map(s=>({
+   id:s.dataset.id,status:s.value
+ }));
+ const records=get("attendance");
+ const i=records.findIndex(r=>r.day===day);
+ const item={day,entries};
+ if(i>=0)records[i]=item;
+ else records.push(item);
+ put("attendance",records);
+ document.getElementById("msg").textContent="हाजिरी Save भयो: "+day;
+ renderReport();
 }
 
 function renderReport(){
-  const month=document.getElementById("month").value;
-  const workers=get("workers");
-  const records=get("attendance").filter(r=>r.day.startsWith(month));
-  document.getElementById("report").innerHTML=workers.map(w=>{
-    let p=0,a=0,h=0;
-    records.forEach(r=>(r.entries||[]).filter(e=>e.id===w.id).forEach(e=>{
-      if(e.status==="Present")p++;
-      if(e.status==="Absent")a++;
-      if(e.status==="Half Day")h++;
-    }));
-    return `<div class="row"><span>${escapeHTML(w.name)}</span>
-    <span>हाजिर ${p} | गैरहाजिर ${a} | आधा दिन ${h}</span></div>`;
-  }).join("")||"कुनै कर्मचारी छैन";
+ const month=document.getElementById("month").value;
+ const list=get("workers");
+ const records=get("attendance").filter(r=>r.day.startsWith(month));
+ let totalP=0,totalA=0,totalH=0;
+ document.getElementById("report").innerHTML=list.map(w=>{
+   let p=0,a=0,h=0;
+   records.forEach(r=>(r.entries||[]).forEach(e=>{
+     if(e.id!==w.id)return;
+     if(e.status==="Present")p++;
+     if(e.status==="Absent")a++;
+     if(e.status==="Half Day")h++;
+   }));
+   totalP+=p;totalA+=a;totalH+=h;
+   return `<div class="report"><b>${esc(w.name)}</b><br>
+   हाजिर: ${p} | गैरहाजिर: ${a} | आधा दिन: ${h}</div>`;
+ }).join("")||"यो महिनाको रिपोर्ट छैन।";
+ document.getElementById("report").insertAdjacentHTML("afterbegin",
+ `<div class="report"><b>सबै कर्मचारीको जम्मा</b><br>
+ हाजिर: ${totalP} | गैरहाजिर: ${totalA} | आधा दिन: ${totalH}</div>`);
 }
+
+function backup(){
+ const data={
+   workers:get("workers"),
+   attendance:get("attendance"),
+   exportedAt:new Date().toISOString()
+ };
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;a.download="SGTS-Attendance-Backup.json";
+ a.click();URL.revokeObjectURL(url);
+}
+
+document.getElementById("restore").addEventListener("change",async function(){
+ const file=this.files[0];
+ if(!file)return;
+ try{
+   const data=JSON.parse(await file.text());
+   if(!Array.isArray(data.workers)||!Array.isArray(data.attendance))
+     throw new Error("Invalid backup");
+   if(!confirm("हालको डाटा Backup को डाटाले बदल्ने हो?"))return;
+   put("workers",data.workers);
+   put("attendance",data.attendance);
+   render();
+   alert("Backup Restore भयो।");
+ }catch(e){alert("Backup फाइल मिलेन।");}
+ this.value="";
+});
 
 document.getElementById("day").addEventListener("change",render);
 document.getElementById("month").addEventListener("change",renderReport);
+
+if("serviceWorker" in navigator){
+ window.addEventListener("load",()=>{
+   navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+ });
+}
 render();
 </script>
 </body>
